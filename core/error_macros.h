@@ -133,7 +133,7 @@ extern bool _err_error_exists;
 
 #define ERR_FAIL_INDEX(m_index, m_size)                                                                             \
 	do {                                                                                                            \
-		if (unlikely((m_index) < 0 || (m_index) >= (m_size))) {                                                     \
+		if (unlikely((m_index) < 0 || (static_cast<int>(m_index)) >= (m_size))) {                                   \
 			_err_print_index_error(FUNCTION_STR, __FILE__, __LINE__, m_index, m_size, _STR(m_index), _STR(m_size)); \
 			return;                                                                                                 \
 		} else                                                                                                      \
@@ -147,7 +147,7 @@ extern bool _err_error_exists;
 
 #define ERR_FAIL_INDEX_V(m_index, m_size, m_retval)                                                                 \
 	do {                                                                                                            \
-		if (unlikely((m_index) < 0 || (m_index) >= (m_size))) {                                                     \
+		if (unlikely((m_index) < 0 || static_cast<int>(m_index) >= (m_size))) {                                     \
 			_err_print_index_error(FUNCTION_STR, __FILE__, __LINE__, m_index, m_size, _STR(m_index), _STR(m_size)); \
 			return m_retval;                                                                                        \
 		} else                                                                                                      \
@@ -161,7 +161,7 @@ extern bool _err_error_exists;
 
 #define ERR_FAIL_UNSIGNED_INDEX_V(m_index, m_size, m_retval)                                                        \
 	do {                                                                                                            \
-		if (unlikely((m_index) >= (m_size))) {                                                                      \
+		if (unlikely(static_cast<unsigned int>(m_index) >= (m_size))) {                                             \
 			_err_print_index_error(FUNCTION_STR, __FILE__, __LINE__, m_index, m_size, _STR(m_index), _STR(m_size)); \
 			return m_retval;                                                                                        \
 		} else                                                                                                      \
@@ -173,7 +173,7 @@ extern bool _err_error_exists;
 */
 #define CRASH_BAD_INDEX(m_index, m_size)                                                                                  \
 	do {                                                                                                                  \
-		if (unlikely((m_index) < 0 || (m_index) >= (m_size))) {                                                           \
+		if (unlikely((m_index) < 0 || static_cast<int>(m_index) >= (m_size))) {                                           \
 			_err_print_index_error(FUNCTION_STR, __FILE__, __LINE__, m_index, m_size, _STR(m_index), _STR(m_size), true); \
 			GENERATE_TRAP                                                                                                 \
 		}                                                                                                                 \
