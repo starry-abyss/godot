@@ -2462,26 +2462,35 @@ ProjectManager::ProjectManager() {
 	tabs->set_tab_align(TabContainer::ALIGN_LEFT);
 	tabs->connect("tab_changed", callable_mp(this, &ProjectManager::_on_tab_changed));
 
-	HBoxContainer *projects_hb = memnew(HBoxContainer);
-	projects_hb->set_name(TTR("Local Projects"));
-	tabs->add_child(projects_hb);
+	VBoxContainer *projects_vb = memnew(VBoxContainer);
+	projects_vb->set_name(TTR("Local Projects"));
+	tabs->add_child(projects_vb);
 
 	{
-		// Projects + search bar
-		VBoxContainer *search_tree_vb = memnew(VBoxContainer);
-		projects_hb->add_child(search_tree_vb);
-		search_tree_vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-
+		// A bar with buttons and options at top
 		HBoxContainer *hb = memnew(HBoxContainer);
 		hb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		search_tree_vb->add_child(hb);
+		projects_vb->add_child(hb);
 
-		search_box = memnew(LineEdit);
-		search_box->set_placeholder(TTR("Filter projects"));
-		search_box->set_tooltip(TTR("This field filters projects by name and last path component.\nTo filter projects by name and full path, the query must contain at least one `/` character."));
-		search_box->connect("text_changed", callable_mp(this, &ProjectManager::_on_search_term_changed));
-		search_box->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		hb->add_child(search_box);
+		projects_vb->add_child(memnew(HSeparator));
+
+		Button *create = memnew(Button);
+		create->set_text(TTR("New"));
+		create->set_shortcut(ED_SHORTCUT("project_manager/new_project", TTR("New Project"), KEY_MASK_CMD | KEY_N));
+		create->connect("pressed", callable_mp(this, &ProjectManager::_new_project));
+		hb->add_child(create);
+
+		Button *import = memnew(Button);
+		import->set_text(TTR("Import"));
+		import->set_shortcut(ED_SHORTCUT("project_manager/import_project", TTR("Import Project"), KEY_MASK_CMD | KEY_I));
+		import->connect("pressed", callable_mp(this, &ProjectManager::_import_project));
+		hb->add_child(import);
+
+		Button *scan = memnew(Button);
+		scan->set_text(TTR("Scan"));
+		scan->set_shortcut(ED_SHORTCUT("project_manager/scan_projects", TTR("Scan Projects"), KEY_MASK_CMD | KEY_S));
+		scan->connect("pressed", callable_mp(this, &ProjectManager::_scan_projects));
+		hb->add_child(scan);
 
 		loading_label = memnew(Label(TTR("Loading, please wait...")));
 		loading_label->add_theme_font_override("font", get_theme_font(SNAME("bold"), SNAME("EditorFonts")));
@@ -2489,6 +2498,13 @@ ProjectManager::ProjectManager() {
 		hb->add_child(loading_label);
 		// Hide the label but make it still take up space. This prevents reflows when showing the label.
 		loading_label->set_modulate(Color(0, 0, 0, 0));
+
+		search_box = memnew(LineEdit);
+		search_box->set_placeholder(TTR("Filter projects"));
+		search_box->set_tooltip(TTR("This field filters projects by name and last path component.\nTo filter projects by name and full path, the query must contain at least one `/` character."));
+		search_box->connect("text_changed", callable_mp(this, &ProjectManager::_on_search_term_changed));
+		search_box->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		hb->add_child(search_box);
 
 		Label *sort_label = memnew(Label);
 		sort_label->set_text(TTR("Sort:"));
@@ -2508,44 +2524,30 @@ ProjectManager::ProjectManager() {
 		for (int i = 0; i < sort_filter_titles.size(); i++) {
 			filter_option->add_item(sort_filter_titles[i]);
 		}
+	}
 
+	{
+		// A container for a project list and for a side bar with buttons
+		HBoxContainer *search_tree_hb = memnew(HBoxContainer);
+		projects_vb->add_child(search_tree_hb);
+		search_tree_hb->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+
+		// A panel with the project list on it
 		PanelContainer *pc = memnew(PanelContainer);
 		pc->add_theme_style_override("panel", get_theme_stylebox(SNAME("bg"), SNAME("Tree")));
-		pc->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-		search_tree_vb->add_child(pc);
+		pc->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+		search_tree_hb->add_child(pc);
 
 		_project_list = memnew(ProjectList);
 		_project_list->connect(ProjectList::SIGNAL_SELECTION_CHANGED, callable_mp(this, &ProjectManager::_update_project_buttons));
 		_project_list->connect(ProjectList::SIGNAL_PROJECT_ASK_OPEN, callable_mp(this, &ProjectManager::_open_selected_projects_ask));
 		_project_list->set_enable_h_scroll(false);
 		pc->add_child(_project_list);
-	}
 
-	{
-		// Project tab side bar
+		// The side bar with buttons
 		VBoxContainer *tree_vb = memnew(VBoxContainer);
 		tree_vb->set_custom_minimum_size(Size2(120, 120));
-		projects_hb->add_child(tree_vb);
-
-		Button *create = memnew(Button);
-		create->set_text(TTR("New Project"));
-		create->set_shortcut(ED_SHORTCUT("project_manager/new_project", TTR("New Project"), KEY_MASK_CMD | KEY_N));
-		create->connect("pressed", callable_mp(this, &ProjectManager::_new_project));
-		tree_vb->add_child(create);
-
-		Button *import = memnew(Button);
-		import->set_text(TTR("Import"));
-		import->set_shortcut(ED_SHORTCUT("project_manager/import_project", TTR("Import Project"), KEY_MASK_CMD | KEY_I));
-		import->connect("pressed", callable_mp(this, &ProjectManager::_import_project));
-		tree_vb->add_child(import);
-
-		Button *scan = memnew(Button);
-		scan->set_text(TTR("Scan"));
-		scan->set_shortcut(ED_SHORTCUT("project_manager/scan_projects", TTR("Scan Projects"), KEY_MASK_CMD | KEY_S));
-		scan->connect("pressed", callable_mp(this, &ProjectManager::_scan_projects));
-		tree_vb->add_child(scan);
-
-		tree_vb->add_child(memnew(HSeparator));
+		search_tree_hb->add_child(tree_vb);
 
 		open_btn = memnew(Button);
 		open_btn->set_text(TTR("Edit"));
